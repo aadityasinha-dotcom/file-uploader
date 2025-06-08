@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 40px;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .api-info {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(240, 147, 251, 0.3);
+        }
+
+        .section {
+            margin-bottom: 40px;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            border: 1px solid #f0f0f0;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+        }
+
+        .upload-area:hover,
+        .upload-area.drag-over {
+            border-color: #764ba2;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            transform: scale(1.02);
+        }
+
+        .upload-area input[type="file"] {
+            display: none;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            margin: 10px 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .file-list {
+            margin-top: 20px;
+        }
+
+        .file-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .file-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .result-area {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            min-height: 100px;
+            border: 1px solid #e9ecef;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .result-area.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status {
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 File Upload Manager</h1>
+        
+        <div class="api-info">
+            <p><strong>API Version:</strong> <span id="api-version">Loading...</span></p>
+            <p>FastAPI Backend Integration</p>
+        </div>
+
+        <div class="grid">
+            <!-- Single File Upload -->
+            <div class="section">
+                <h2><span class="icon">1</span>Single File Upload</h2>
+                <div class="upload-area" onclick="document.getElementById('single-file').click()">
+                    <input type="file" id="single-file" />
+                    <div class="upload-text">📁 Click to select a file</div>
+                    <div class="upload-subtext">or drag and drop here</div>
+                </div>
+                <div class="progress-bar" id="progress-single">
+                    <div class="progress-fill"></div>
+                </div>
+                <button class="btn" onclick="uploadSingleFile()">Upload File</button>
+                <div class="status" id="status-single"></div>
+                <div class="file-list" id="single-file-list"></div>
+            </div>
+
+            <!-- Multiple Files Upload -->
+            <div class="section">
+                <h2><span class="icon">∞</span>Multiple Files Upload</h2>
+                <div class="upload-area" onclick="document.getElementById('multiple-files').click()">
+                    <input type="file" id="multiple-files" multiple />
+                    <div class="upload-text">📂 Click to select multiple files</div>
+                    <div class="upload-subtext">or drag and drop here</div>
+                </div>
+                <div class="progress-bar" id="progress-multiple">
+                    <div class="progress-fill"></div>
+                </div>
+                <button class="btn" onclick="uploadMultipleFiles()">Upload Files</button>
+                <div class="status" id="status-multiple"></div>
+                <div class="file-list" id="multiple-file-list"></div>
+            </div>
+        </div>
+
+        <!-- File Content Extraction -->
+        <div class="section">
+            <h2><span class="icon">📄</span>File Content Extraction</h2>
+            <div class="upload-area" onclick="document.getElementById('content-file').click()">
+                <input type="file" id="content-file" />
+                <div class="upload-text">📝 Click to select a file for text extraction</div>
+                <div class="upload-subtext">File content will be processed in memory</div>
+            </div>
+            <div class="progress-bar" id="progress-content">
+                <div class="progress-fill"></div>
+            </div>
+            <button class="btn" onclick="extractFileContent()">Extract Text</button>
+            <div class="status" id="status-content"></div>
+            <div class="result-area" id="content-result"></div>
+        </div>
+    </div>
+
+    <script>
+        // API base URL - change this to your FastAPI server URL
+        const API_BASE = 'http://localhost:8000';
+
+        // Load API version on page load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch(`${API_BASE}/version`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                document.getElementById('api-version').textContent = data.result;
+            } catch (error) {
+                document.getElementById('api-version').textContent = 'Connection Error';
+                console.error('Failed to load API version:', error);
+            }
+        });
+
+        // Drag and drop functionality
+        function setupDragAndDrop() {
+            const uploadAreas = document.querySelectorAll('.upload-area');
+            
+            uploadAreas.forEach(area => {
+                area.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    area.classList.add('drag-over');
+                });
+                
+                area.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    area.classList.remove('drag-over');
+                });
+                
+                area.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    area.classList.remove('drag-over');
+                    
+                    const files = e.dataTransfer.files;
+                    const input = area.querySelector('input[type="file"]');
+                    
+                    if (input.multiple) {
+                        input.files = files;
+                        updateFileList(files, input.id + '-list');
+                    } else if (files.length > 0) {
+                        const dt = new DataTransfer();
+                        dt.items.add(files[0]);
+                        input.files = dt.files;
+                        updateFileList([files[0]], input.id + '-list');
+                    }
+                });
+            });
+        }
+
+        // File input change handlers
+        document.getElementById('single-file').addEventListener('change', (e) => {
+            updateFileList(e.target.files, 'single-file-list');
+        });
+
+        document.getElementById('multiple-files').addEventListener('change', (e) => {
+            updateFileList(e.target.files, 'multiple-file-list');
+        });
+
+        document.getElementById('content-file').addEventListener('change', (e) => {
+            updateFileList(e.target.files, 'content-file-list');
+        });
+
+        // Update file list display
+        function updateFileList(files, listId) {
+            const listElement = document.getElementById(listId);
+            if (!listElement) return;
+            
+            listElement.innerHTML = '';
+            
+            Array.from(files).forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <span>${file.name}</span>
+                    <span>${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                `;
+                listElement.appendChild(fileItem);
+            });
+        }
+
+        // Show status message
+        function showStatus(elementId, message, type = 'success') {
+            const statusElement = document.getElementById(elementId);
+            statusElement.textContent = message;
+            statusElement.className = `status ${type} show`;
+            
+            setTimeout(() => {
+                statusElement.classList.remove('show');
+            }, 5000);
+        }
+
+        // Show progress bar
+        function showProgress(progressId, show = true) {
+            const progressBar = document.getElementById(progressId);
+            progressBar.style.display = show ? 'block' : 'none';
+            
+            if (show) {
+                const fill = progressBar.querySelector('.progress-fill');
+                fill.style.width = '0%';
+                
+                // Simulate progress
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 30;
+                    if (progress >= 90) {
+                        clearInterval(interval);
+                        progress = 90;
+                    }
+                    fill.style.width = progress + '%';
+                }, 200);
+                
+                return interval;
+            }
+        }
+
+        // Complete progress bar
+        function completeProgress(progressId, interval) {
+            if (interval) clearInterval(interval);
+            const progressBar = document.getElementById(progressId);
+            const fill = progressBar.querySelector('.progress-fill');
+            fill.style.width = '100%';
+            
+            setTimeout(() => {
+                progressBar.style.display = 'none';
+            }, 1000);
+        }
+
+        // Upload single file
+        async function uploadSingleFile() {
+            const fileInput = document.getElementById('single-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showStatus('status-single', 'Please select a file first', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const progressInterval = showProgress('progress-single');
+
+            try {
+                const response = await fetch(`${API_BASE}/upload-file`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                completeProgress('progress-single', progressInterval);
+
+                if (response.ok) {
+                    showStatus('status-single', `File "${file.name}" uploaded successfully!`);
+                } else {
+                    showStatus('status-single', 'Upload failed. Please try again.', 'error');
+                }
+            } catch (error) {
+                completeProgress('progress-single', progressInterval);
+                showStatus('status-single', 'Network error. Check if the API server is running.', 'error');
+                console.error('Upload error:', error);
+            }
+        }
+
+        // Upload multiple files
+        async function uploadMultipleFiles() {
+            const fileInput = document.getElementById('multiple-files');
+            const files = fileInput.files;
+            
+            if (files.length === 0) {
+                showStatus('status-multiple', 'Please select files first', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            Array.from(files).forEach(file => {
+                formData.append('files', file);
+            });
+            
+            const progressInterval = showProgress('progress-multiple');
+
+            try {
+                const response = await fetch(`${API_BASE}/upload-files`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                completeProgress('progress-multiple', progressInterval);
+
+                if (response.ok) {
+                    showStatus('status-multiple', `${files.length} files uploaded successfully!`);
+                } else {
+                    showStatus('status-multiple', 'Upload failed. Please try again.', 'error');
+                }
+            } catch (error) {
+                completeProgress('progress-multiple', progressInterval);
+                showStatus('status-multiple', 'Network error. Check if the API server is running.', 'error');
+                console.error('Upload error:', error);
+            }
+        }
+
+        // Extract file content
+        async function extractFileContent() {
+            const fileInput = document.getElementById('content-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showStatus('status-content', 'Please select a file first', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const progressInterval = showProgress('progress-content');
+
+            try {
+                const response = await fetch(`${API_BASE}/upload-file-contents`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                completeProgress('progress-content', progressInterval);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const resultArea = document.getElementById('content-result');
+                    resultArea.textContent = data.result || 'No text content found';
+                    resultArea.classList.add('show');
+                    showStatus('status-content', 'Text extracted successfully!');
+                } else {
+                    showStatus('status-content', 'Extraction failed. Please try again.', 'error');
+                }
+            } catch (error) {
+                completeProgress('progress-content', progressInterval);
+                showStatus('status-content', 'Network error. Check if the API server is running.', 'error');
+                console.error('Extraction error:', error);
+            }
+        }
+
+        // Initialize drag and drop
+        setupDragAndDrop();
+    </script>
+</body>
+</html>
