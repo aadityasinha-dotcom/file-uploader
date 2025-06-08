@@ -1,4 +1,4 @@
-# FastAPI File Upload Workshop
+# File Uploader
 
 This is a simple FastAPI application that demonstrates how to handle file uploads using the synchronous and asynchronous approaches.
 
